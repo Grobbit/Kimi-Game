@@ -3,6 +3,8 @@ import { persist, createJSONStorage } from "zustand/middleware";
 
 export interface Settings {
   apiKey: string;
+  /** "auto" = let the route figure out which host owns this key. */
+  provider: string;
   model: string;
   baseUrl: string;
   /** 0 = unlimited */
@@ -24,6 +26,7 @@ export const useSettings = create<SettingsStore>()(
   persist(
     (set) => ({
       apiKey: "",
+      provider: "auto",
       model: "kimi-k3.1-pro",
       baseUrl: "https://api.cerebras.ai/v1",
       budgetUsd: 0,
@@ -43,6 +46,7 @@ export const useSettings = create<SettingsStore>()(
       skipHydration: true,
       partialize: (s) => ({
         apiKey: s.apiKey,
+        provider: s.provider,
         model: s.model,
         baseUrl: s.baseUrl,
         budgetUsd: s.budgetUsd,

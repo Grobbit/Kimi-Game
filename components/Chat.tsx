@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSettings } from "@/lib/settings";
 import { useUI } from "@/lib/ui";
 import { executeCommand, runDirector } from "@/lib/directorClient";
+import { getProvider } from "@/lib/providers";
 
 type Msg = {
   id: number;
@@ -143,7 +144,9 @@ export default function Chat() {
         <div>
           <div className="title">Director</div>
           <div className="model">
-            {settings.demo ? "local demo" : settings.model}
+            {settings.demo
+              ? "local demo"
+              : `${getProvider(settings.provider)?.label ?? "auto"} · ${settings.model}`}
           </div>
         </div>
         <span className="grow" />

@@ -15,17 +15,20 @@ npm install
 npm run dev          # http://localhost:3000
 ```
 
-Open the page, paste a Cerebras API key in the gate screen (stored in your browser, sent only to the
-local `/api/director` proxy), and press play.
+Open the page, paste an API key from any [OI]-compatible host (Cerebras, Moonshot/Kimi,
+OpenRouter, Groq, DeepSeek, xAI, Together, Mistral, [OI], Anthropic, or your own endpoint), press
+**Test key** to confirm which host owns it, then enter. The key is stored in your browser and sent
+only to the local `/api/director` proxy.
 
 To skip the key prompt, put one in `.env.local` on the server:
 
 ```bash
 cp .env.example .env.local
-# CEREBRAS_API_KEY=csk-...
+# DIRECTOR_API_KEY=csk-...
+# or CEREBRAS_API_KEY / MOONSHOT_API_KEY / OPENROUTER_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY
 ```
 
-Other optional vars (see `.env.example`): `CEREBRAS_BASE_URL`, `CEREBRAS_MODEL`,
+Other optional vars (see `.env.example`): `DIRECTOR_BASE_URL`, `DIRECTOR_MODEL`,
 `POLY_PIZZA_KEY` (Tier-2 asset search), `NEXT_PUBLIC_ASSET_BASE` (CDN for heavy GLB/HDRI assets).
 
 ## Controls
@@ -53,10 +56,18 @@ Other optional vars (see `.env.example`): `CEREBRAS_BASE_URL`, `CEREBRAS_MODEL`,
 ## How the director works
 
 ```
-Chat box → /api/director (edge route) → Cerebras chat completions (Kimi K3.1 Pro)
+Chat box → /api/director (edge route) → resolve host from the key → chat completions
         ← {"c":[{"k":"veh","id":"f1","col":"#d11","enter":true}, …]}
         → store.applyCommands() → live scene
 ```
+
+**Any key, any host.** The route sanitises the pasted key (strips quotes, `Bearer `, newlines,
+zero-width characters), orders candidate hosts by key prefix, then verifies with a real request —
+first host that accepts it wins, and the winning provider/model is echoed back in
+`x-director-provider` / `x-director-model` and persisted, so the next sentence skips discovery.
+`GET /models` is used to pick a model when the host publishes one. Anthropic's wire format is
+translated to [OI]-style SSE, so the client only ever parses one shape. `POST /api/key-test` is the
+same logic behind the gate's **Test key** button.
 
 The system prompt is fully static (`lib/directorPrompt.ts`) so the provider can keep its KV cache warm;
 world state is never interpolated into it. Commands are a closed, validated schema — biome, vehicle,

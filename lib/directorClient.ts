@@ -4,7 +4,8 @@ import { CommandStream } from "./incremental";
 import { DIRECTOR_SYSTEM } from "./directorPrompt";
 import { demoDirector } from "./demoDirector";
 import { snapshot, useWorld } from "./store";
-import { costOf, type Settings } from "./settings";
+import { costOf, type Settings, useSettings } from "./settings";
+import { sanitizeKey } from "./providers";
 
 export interface DirectorRun {
   commands: number;
@@ -14,6 +15,9 @@ export interface DirectorRun {
   totalMs: number;
   costUsd: number;
   reply: string;
+  /** Which host/model actually served this run. */
+  provider?: string;
+  model?: string;
 }
 
 interface RunOpts {
@@ -38,18 +42,18 @@ export async function runDirector(opts: RunOpts): Promise<DirectorRun> {
   let completionTokens = 0;
 
   const state = snapshot();
+  const key = sanitizeKey(opts.settings.apiKey);
   const res = await fetch("/api/director", {
     method: "POST",
     signal: opts.signal,
     headers: {
       "Content-Type": "application/json",
-      ...(opts.settings.apiKey
-        ? { "x-api-key": opts.settings.apiKey.trim() }
-        : {}),
+      ...(key ? { "x-api-key": key } : {}),
     },
     body: JSON.stringify({
       message: opts.message,
       state,
+      provider: opts.settings.provider || "auto",
       model: opts.settings.model.trim() || undefined,
       baseUrl: opts.settings.baseUrl.trim() || undefined,
     }),
@@ -64,6 +68,19 @@ export async function runDirector(opts: RunOpts): Promise<DirectorRun> {
       /* noop */
     }
     throw new Error(msg);
+  }
+
+  // Remember which host answered, so the next sentence skips discovery.
+  const usedProvider = res.headers.get("x-director-provider") || "";
+  const usedModel = res.headers.get("x-director-model") || "";
+  const usedBase = res.headers.get("x-director-base") || "";
+  if (usedProvider && usedProvider !== "custom") {
+    const cur = useSettings.getState();
+    const patch: Partial<Settings> = {};
+    if (cur.provider !== usedProvider) patch.provider = usedProvider;
+    if (usedModel && cur.model !== usedModel) patch.model = usedModel;
+    if (usedBase && cur.baseUrl !== usedBase) patch.baseUrl = usedBase;
+    if (Object.keys(patch).length) cur.set(patch);
   }
 
   const ctype = res.headers.get("content-type") ?? "";
@@ -163,6 +180,8 @@ export async function runDirector(opts: RunOpts): Promise<DirectorRun> {
       opts.settings.priceOut,
     ),
     reply: "",
+    provider: usedProvider || undefined,
+    model: usedModel || undefined,
   };
 }
 

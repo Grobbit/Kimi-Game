@@ -255,6 +255,60 @@ button {
   letter-spacing: 0.01em;
 }
 
+select.input {
+  appearance: none;
+  cursor: pointer;
+  padding-right: 34px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 19px, calc(100% - 13px) 19px;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+select.input option {
+  background: #0b1118;
+  color: var(--text);
+}
+
+.provider-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.provider-row .input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.test-btn {
+  height: 44px;
+  border-radius: 11px;
+  padding: 0 16px;
+  white-space: nowrap;
+}
+
+.test-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.test-result {
+  margin-top: 7px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.test-result.ok {
+  color: #7ee0b0;
+}
+
+.test-result.bad {
+  color: #ff9c9c;
+}
+
 .budget-row {
   display: flex;
   flex-wrap: wrap;
